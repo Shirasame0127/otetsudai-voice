@@ -20,6 +20,10 @@ const DEFAULTS = {
   elKey: "",
   elVoice: "",
   elModel: "eleven_v4_turbo", // 表現力重視なら "eleven_v4"
+  provider: "", // 声の提供元: device(端末の標準) / eleven / fish。空なら自動で決める
+  fishKey: "",
+  fishVoice: "",
+  fishUrl: "", // 中継(Cloudflare Workers)のURL。Fish AudioはブラウザからCORSで直接つなげない
   rate: 1.0,
 };
 const KEY = "otetsudai-settings-v1";
@@ -27,6 +31,7 @@ let cfg = { ...DEFAULTS };
 try {
   cfg = { ...DEFAULTS, ...JSON.parse(localStorage.getItem(KEY) || "{}") };
 } catch (e) {}
+if (!cfg.provider) cfg.provider = cfg.elKey && cfg.elVoice ? "eleven" : cfg.fishKey && cfg.fishUrl ? "fish" : "device";
 function saveCfg() {
   try {
     localStorage.setItem(KEY, JSON.stringify(cfg));
@@ -276,13 +281,43 @@ function playUrl(url, my) {
     a.play().catch(done);
   });
 }
-const useEleven = () => !!(cfg.elKey && cfg.elVoice);
+// Fish Audio は中継(Workers)経由で呼ぶ。キーは Authorization に入れて中継へ渡す。
+async function fetchFish(text) {
+  const body = { text, format: "mp3" };
+  if (cfg.fishVoice) body.reference_id = cfg.fishVoice;
+  const res = await fetch(cfg.fishUrl, {
+    method: "POST",
+    headers: { Authorization: "Bearer " + cfg.fishKey, "Content-Type": "application/json", "X-Fish-Model": "s2.1-pro-free" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    let detail = "";
+    try {
+      const j = await res.json();
+      detail = j.message || j.reason || j.error || JSON.stringify(j);
+    } catch (e) {}
+    const hint =
+      res.status === 401
+        ? "(Fishのキーを確認)"
+        : res.status === 402
+          ? "(無料モデルではない、または残高不足)"
+          : res.status === 403
+            ? "(中継がこのアプリのURLを許可していません)"
+            : res.status === 503
+              ? "(混んでいます。少し待ってください)"
+              : "";
+    throw new Error("Fish " + res.status + hint + " " + detail);
+  }
+  return URL.createObjectURL(await res.blob());
+}
+const ttsReady = () => (cfg.provider === "eleven" ? !!(cfg.elKey && cfg.elVoice) : cfg.provider === "fish" ? !!(cfg.fishKey && cfg.fishUrl) : false);
+const fetchTts = (text) => (cfg.provider === "fish" ? fetchFish(text) : fetchEleven(text));
 
-// 文を1つずつ受け取り、順番に読む。ElevenLabs は先に取りに行っておく(待ち時間を減らす)。
+// 文を1つずつ受け取り、順番に読む。クラウドの声は先に取りに行っておく(待ち時間を減らす)。
 function enqueueSpeech(text) {
   const my = epoch;
-  if (useEleven()) {
-    const pre = fetchEleven(text).catch((e) => {
+  if (ttsReady()) {
+    const pre = fetchTts(text).catch((e) => {
       addMsg("err", "声の取得に失敗(" + e.message + ")。標準の声で続けます。");
       return null;
     });
@@ -504,7 +539,7 @@ $("#typeForm").addEventListener("submit", (e) => {
 });
 
 /* ---------- 設定画面 ---------- */
-const FIELDS = ["apiKey", "model", "wake", "persona", "elKey", "elVoice", "elModel", "rate"];
+const FIELDS = ["apiKey", "model", "wake", "persona", "provider", "elKey", "elVoice", "elModel", "fishKey", "fishVoice", "fishUrl", "rate"];
 function fillSettings() {
   FIELDS.forEach((k) => ($("#" + k).value = cfg[k]));
   $("#rateOut").textContent = "×" + Number(cfg.rate).toFixed(2);

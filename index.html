@@ -61,7 +61,22 @@
     <textarea id="persona" rows="6"></textarea>
 
     <h3>声(人間らしい声にしたい時)</h3>
-    <label for="elKey">ElevenLabs の APIキー(空なら端末の標準の声)</label>
+    <label for="provider">使う声</label>
+    <select id="provider">
+      <option value="device">端末の標準の声</option>
+      <option value="eleven">ElevenLabs</option>
+      <option value="fish">Fish Audio(中継が必要)</option>
+    </select>
+    <p class="note">選んだ声の欄が空だと、端末の標準の声で話します。</p>
+
+    <label for="fishKey">Fish Audio の APIキー</label>
+    <input id="fishKey" type="password" autocomplete="off">
+    <label for="fishVoice">Fish Audio の Voice ID(空なら標準の声)</label>
+    <input id="fishVoice" type="text" autocomplete="off">
+    <label for="fishUrl">Fish Audio の中継URL</label>
+    <input id="fishUrl" type="text" autocomplete="off" placeholder="https://〜.workers.dev">
+
+    <label for="elKey">ElevenLabs の APIキー</label>
     <input id="elKey" type="password" autocomplete="off">
     <label for="elVoice">Voice ID</label>
     <input id="elVoice" type="text" autocomplete="off">
