@@ -23,6 +23,7 @@ const DEFAULTS = {
   provider: "", // 声の提供元: device(端末の標準) / eleven / fish。空なら自動で決める
   fishKey: "",
   fishVoice: "",
+  fishLatency: "", // 空=既定(normal)。"low"(速さ優先)・"balanced"
   fishUrl: "", // 中継(Cloudflare Workers)のURL。Fish AudioはブラウザからCORSで直接つなげない
   rate: 1.0,
 };
@@ -285,6 +286,7 @@ function playUrl(url, my) {
 async function fetchFish(text) {
   const body = { text, format: "mp3" };
   if (cfg.fishVoice) body.reference_id = cfg.fishVoice;
+  if (cfg.fishLatency) body.latency = cfg.fishLatency;
   const res = await fetch(cfg.fishUrl, {
     method: "POST",
     headers: { Authorization: "Bearer " + cfg.fishKey, "Content-Type": "application/json", "X-Fish-Model": "s2.1-pro-free" },
@@ -418,11 +420,19 @@ async function submit(text) {
   let buf = "",
     shown = "",
     started = false;
+  let firstOut = false;
   const flush = (all) => {
-    // 句点などで区切って、できた文から読み始める
+    // 句点などで区切って、できた文から読み始める。最初の1回だけは、読点でも区切って早く始める。
     for (;;) {
-      const m = buf.match(/^([\s\S]*?[。！？!?\n])/);
-      let part = m ? m[1] : null;
+      let part = null;
+      if (!firstOut) {
+        const k = buf.search(/[、，,。！？!?\n]/);
+        if (k >= 5) part = buf.slice(0, k + 1);
+      }
+      if (!part) {
+        const m = buf.match(/^([\s\S]*?[。！？!?\n])/);
+        part = m ? m[1] : null;
+      }
       if (!part && buf.length > 60) {
         const k = buf.lastIndexOf("、", 60);
         if (k > 10) part = buf.slice(0, k + 1);
@@ -443,6 +453,7 @@ async function submit(text) {
       started = true;
       setState("speaking");
     }
+    firstOut = true;
     enqueueSpeech(t);
   };
   try {
@@ -539,7 +550,7 @@ $("#typeForm").addEventListener("submit", (e) => {
 });
 
 /* ---------- 設定画面 ---------- */
-const FIELDS = ["apiKey", "model", "wake", "persona", "provider", "elKey", "elVoice", "elModel", "fishKey", "fishVoice", "fishUrl", "rate"];
+const FIELDS = ["apiKey", "model", "wake", "persona", "provider", "elKey", "elVoice", "elModel", "fishKey", "fishVoice", "fishUrl", "fishLatency", "rate"];
 function fillSettings() {
   FIELDS.forEach((k) => ($("#" + k).value = cfg[k]));
   $("#rateOut").textContent = "×" + Number(cfg.rate).toFixed(2);
