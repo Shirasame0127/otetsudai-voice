@@ -62,7 +62,16 @@ function updateHint() {
   const h = $("#hint");
   if (state === "off") h.textContent = SR ? "「" + wakeList()[0] + "」と呼びかけると反応します。" : "";
   else if (state === "idle") h.textContent = "「" + wakeList()[0] + "」と呼びかける。反応しない時は、丸をタップ。";
+  else if (state === "speaking") h.textContent = "声: " + voiceLabel();
   else h.textContent = "";
+}
+// 今どの声を使っているか(設定が反映されているかの確認用)
+function voiceLabel() {
+  if (cfg.provider === "fish")
+    return cfg.fishKey && cfg.fishUrl ? "Fish Audio " + (cfg.fishModel || "s2.1-pro-free") + (cfg.fishLatency ? " / " + cfg.fishLatency : "") : "端末の標準の声(Fishのキーか中継URLが空)";
+  if (cfg.provider === "eleven")
+    return cfg.elKey && cfg.elVoice ? "ElevenLabs " + cfg.elModel : "端末の標準の声(ElevenLabsのキーかVoice IDが空)";
+  return "端末の標準の声";
 }
 
 /* ---------- 画面のログ ---------- */

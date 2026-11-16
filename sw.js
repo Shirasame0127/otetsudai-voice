@@ -1,5 +1,5 @@
 // 画面を素早く開くための土台だけキャッシュする。API通信はキャッシュしない。
-const CACHE = "otetsudai-v1";
+const CACHE = "otetsudai-v2";
 const SHELL = ["./", "./index.html", "./style.css", "./app.js", "./manifest.webmanifest", "./icon.svg"];
 
 self.addEventListener("install", (e) => {
@@ -18,7 +18,7 @@ self.addEventListener("fetch", (e) => {
   if (e.request.method !== "GET" || url.origin !== location.origin) return;
   // ネットワーク優先。つながらない時だけキャッシュ。
   e.respondWith(
-    fetch(e.request)
+    fetch(e.request, { cache: "no-cache" }) // サーバーに最新か確かめる(GitHub Pagesの10分キャッシュを避ける)
       .then((res) => {
         const copy = res.clone();
         caches.open(CACHE).then((c) => c.put(e.request, copy));
