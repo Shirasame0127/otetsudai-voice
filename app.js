@@ -236,7 +236,25 @@ async function fetchEleven(text) {
     headers: { "xi-api-key": cfg.elKey, "content-type": "application/json", accept: "audio/mpeg" },
     body: JSON.stringify({ text, model_id: cfg.elModel }),
   });
-  if (!res.ok) throw new Error("ElevenLabs " + res.status);
+  if (!res.ok) {
+    let detail = "";
+    try {
+      const j = await res.json();
+      const d = j.detail || j;
+      detail = typeof d === "string" ? d : d.message || d.status || JSON.stringify(d);
+    } catch (e) {}
+    const hint =
+      res.status === 402
+        ? "(無料プランでは使えない声かモデルです。有料プランにするか、自分のアカウントの標準の声に変えてください)"
+        : res.status === 401
+          ? "(APIキーを確認。「テキスト読み上げ」の権限が必要)"
+          : res.status === 404
+            ? "(Voice IDかモデルIDが違うようです)"
+            : res.status === 429
+              ? "(使いすぎ。少し待つか、上限を確認)"
+              : "";
+    throw new Error("ElevenLabs " + res.status + hint + " " + detail);
+  }
   return URL.createObjectURL(await res.blob());
 }
 function playUrl(url, my) {
