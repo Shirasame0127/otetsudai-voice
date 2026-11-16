@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#2ec4ff">
+<title>お手伝いさん</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="bar">
+  <h1>お手伝いさん</h1>
+  <div class="bar-actions">
+    <button id="btnClear" class="chip" type="button">忘れる</button>
+    <button id="btnSettings" class="chip fill" type="button">設定</button>
+  </div>
+</header>
+
+<main>
+  <section class="stage" aria-label="状態">
+    <button id="orb" class="orb" data-state="off" type="button" aria-label="起動する">
+      <span class="ring r1"></span><span class="ring r2"></span><span class="core"></span>
+    </button>
+    <p id="status" class="status">タップして起動</p>
+    <p id="heard" class="heard" aria-live="polite"></p>
+    <p id="hint" class="hint"></p>
+  </section>
+
+  <section id="log" class="log" aria-live="polite"></section>
+
+  <form id="typeForm" class="type" autocomplete="off">
+    <input id="typeInput" type="text" placeholder="声の代わりに、文字で話しかける" aria-label="文字で話しかける">
+    <button class="chip fill" type="submit">送る</button>
+  </form>
+  <button id="btnStop" class="chip stop" type="button" hidden>聞き取りをやめる</button>
+</main>
+
+<dialog id="settings">
+  <form method="dialog" id="settingsForm">
+    <h2>設定</h2>
+    <p class="note">キーはこの端末の中だけに保存されます。他の人には送られません。</p>
+
+    <label for="apiKey">Claude の APIキー</label>
+    <input id="apiKey" type="password" autocomplete="off" placeholder="sk-ant-...">
+
+    <label for="model">モデル</label>
+    <select id="model">
+      <option value="claude-haiku-5-5">Haiku 5.5(速い・安い)</option>
+      <option value="claude-sonnet-5-5">Sonnet 5.5(賢い)</option>
+      <option value="claude-opus-5-5">Opus 5.5(一番賢い)</option>
+    </select>
+
+    <label for="wake">ウェイクワード(「,」で区切って複数)</label>
+    <input id="wake" type="text" placeholder="ねえアシスタント">
+    <p class="note">ひらがな・カタカナで書く。声の認識がうまくいかない言い方は、続けて足す。</p>
+
+    <label for="persona">人格・話し方</label>
+    <textarea id="persona" rows="6"></textarea>
+
+    <h3>声(人間らしい声にしたい時)</h3>
+    <label for="elKey">ElevenLabs の APIキー(空なら端末の標準の声)</label>
+    <input id="elKey" type="password" autocomplete="off">
+    <label for="elVoice">Voice ID</label>
+    <input id="elVoice" type="text" autocomplete="off">
+    <label for="elModel">モデルID</label>
+    <input id="elModel" type="text" autocomplete="off">
+    <label for="rate">標準の声の速さ <output id="rateOut"></output></label>
+    <input id="rate" type="range" min="0.7" max="1.5" step="0.05">
+
+    <div class="actions">
+      <button class="chip" value="cancel" type="submit">閉じる</button>
+      <button class="chip fill" id="btnSave" value="save" type="submit">保存</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="app.js"></script>
+</body>
+</html>
