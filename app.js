@@ -23,6 +23,7 @@ const DEFAULTS = {
   provider: "", // 声の提供元: device(端末の標準) / eleven / fish。空なら自動で決める
   fishKey: "",
   fishVoice: "",
+  fishModel: "s2.1-pro-free", // 有料は "s2.1-pro"(Fishの残高が必要)
   fishLatency: "", // 空=既定(normal)。"low"(速さ優先)・"balanced"
   fishUrl: "", // 中継(Cloudflare Workers)のURL。Fish AudioはブラウザからCORSで直接つなげない
   rate: 1.0,
@@ -289,7 +290,7 @@ async function fetchFish(text) {
   if (cfg.fishLatency) body.latency = cfg.fishLatency;
   const res = await fetch(cfg.fishUrl, {
     method: "POST",
-    headers: { Authorization: "Bearer " + cfg.fishKey, "Content-Type": "application/json", "X-Fish-Model": "s2.1-pro-free" },
+    headers: { Authorization: "Bearer " + cfg.fishKey, "Content-Type": "application/json", "X-Fish-Model": cfg.fishModel || "s2.1-pro-free" },
     body: JSON.stringify(body),
   });
   if (!res.ok) {
@@ -302,7 +303,7 @@ async function fetchFish(text) {
       res.status === 401
         ? "(Fishのキーを確認)"
         : res.status === 402
-          ? "(無料モデルではない、または残高不足)"
+          ? "(有料モデルはFishの残高が必要です。無料なら s2.1-pro-free を選んでください)"
           : res.status === 403
             ? "(中継がこのアプリのURLを許可していません)"
             : res.status === 503
@@ -550,7 +551,7 @@ $("#typeForm").addEventListener("submit", (e) => {
 });
 
 /* ---------- 設定画面 ---------- */
-const FIELDS = ["apiKey", "model", "wake", "persona", "provider", "elKey", "elVoice", "elModel", "fishKey", "fishVoice", "fishUrl", "fishLatency", "rate"];
+const FIELDS = ["apiKey", "model", "wake", "persona", "provider", "elKey", "elVoice", "elModel", "fishKey", "fishVoice", "fishUrl", "fishModel", "fishLatency", "rate"];
 function fillSettings() {
   FIELDS.forEach((k) => ($("#" + k).value = cfg[k]));
   $("#rateOut").textContent = "×" + Number(cfg.rate).toFixed(2);
@@ -566,6 +567,7 @@ $("#settings").addEventListener("close", () => {
   if (!cfg.persona) cfg.persona = DEFAULT_PERSONA;
   if (!cfg.wake) cfg.wake = DEFAULTS.wake;
   if (!cfg.elModel) cfg.elModel = DEFAULTS.elModel;
+  if (!cfg.fishModel) cfg.fishModel = DEFAULTS.fishModel;
   saveCfg();
   updateHint();
   addMsg("err", "設定を保存しました。");
